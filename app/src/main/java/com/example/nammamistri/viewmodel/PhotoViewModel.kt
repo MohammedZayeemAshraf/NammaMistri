@@ -20,4 +20,10 @@ class PhotoViewModel(private val repository: NammaMistriRepository) : ViewModel(
             repository.insertPhoto(Photo(siteId = currentSiteId, uri = uri, description = description))
         }
     }
+
+    fun deletePhoto(photoId: Long) {
+        viewModelScope.launch {
+            repository.deletePhoto(photoId)
+        }
+    }
 }

@@ -16,4 +16,7 @@ interface WorkerDao {
 
     @Query("SELECT * FROM workers WHERE id = :id")
     suspend fun getWorkerById(id: Long): Worker?
+
+    @Query("DELETE FROM workers WHERE id = :workerId")
+    suspend fun deleteById(workerId: Long)
 }

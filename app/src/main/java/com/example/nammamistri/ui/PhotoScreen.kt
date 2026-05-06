@@ -84,8 +84,24 @@ fun PhotoScreen(viewModel: PhotoViewModel = viewModel()) {
                                 .height(200.dp)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(photo.description)
-                        Text("Date: ${java.util.Date(photo.date)}")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(photo.description)
+                                Text("Date: ${java.util.Date(photo.date)}")
+                            }
+                            TextButton(
+                                onClick = { viewModel.deletePhoto(photo.id) },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("Delete")
+                            }
+                        }
                     }
                 }
             }

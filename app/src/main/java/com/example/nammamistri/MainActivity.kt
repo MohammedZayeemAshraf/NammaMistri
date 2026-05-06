@@ -7,6 +7,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,6 +27,7 @@ import com.example.nammamistri.viewmodel.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
@@ -75,21 +81,25 @@ class MainActivity : ComponentActivity() {
                         Log.e(TAG, "onCreate: Error seeding data", e)
                     }
 
-                    // Set content after database is ready
-                    setContent {
-                        NAMMAMISTRITheme {
-                            MainScreen(repository)
+                    // Set content after database is ready — must run on main thread
+                    withContext(Dispatchers.Main) {
+                        setContent {
+                            NAMMAMISTRITheme {
+                                MainScreen(repository)
+                            }
                         }
+                        Log.d(TAG, "onCreate: UI content set successfully")
                     }
-                    Log.d(TAG, "onCreate: UI content set successfully")
                 } catch (e: Exception) {
                     Log.e(TAG, "onCreate: Error during database initialization", e)
                     e.printStackTrace()
-                    // Show error UI
-                    setContent {
-                        NAMMAMISTRITheme {
-                            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                                Text("Error initializing database: ${e.message}", modifier = Modifier.padding(16.dp))
+                    // Show error UI on main thread
+                    withContext(Dispatchers.Main) {
+                        setContent {
+                            NAMMAMISTRITheme {
+                                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                                    Text("Error initializing database: ${e.message}", modifier = Modifier.padding(16.dp))
+                                }
                             }
                         }
                     }
@@ -110,22 +120,29 @@ fun MainScreen(repository: NammaMistriRepository) {
 
     Scaffold(
         topBar = {
-            TabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title) }
-                    )
+            Column {
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(title) }
+                        )
+                    }
                 }
             }
         }
     ) { padding ->
-        when (selectedTab) {
-            0 -> CalculatorScreen(viewModel(factory = CalculatorViewModelFactory(repository)))
-            1 -> LaborScreen(viewModel(factory = LaborViewModelFactory(repository)))
-            2 -> PhotoScreen(viewModel(factory = PhotoViewModelFactory(repository)))
-            3 -> RatesScreen(viewModel(factory = RatesViewModelFactory(repository)))
+        Box(modifier = Modifier.padding(padding)) {
+            when (selectedTab) {
+                0 -> CalculatorScreen(viewModel(factory = CalculatorViewModelFactory(repository)))
+                1 -> LaborScreen(viewModel(factory = LaborViewModelFactory(repository)))
+                2 -> PhotoScreen(viewModel(factory = PhotoViewModelFactory(repository)))
+                3 -> RatesScreen(viewModel(factory = RatesViewModelFactory(repository)))
+            }
         }
     }
 }

@@ -43,22 +43,43 @@ fun LaborScreen(viewModel: LaborViewModel = viewModel()) {
             }
 
             items(workers) { worker ->
-                var balance by remember { mutableStateOf(0.0) }
-                LaunchedEffect(worker) {
-                    balance = viewModel.getBalanceForWorker(worker)
-                }
+                val totalAdvance by viewModel.getTotalAdvanceFlow(worker.id)
+                    .collectAsState(initial = 0.0)
+                val daysWorked by viewModel.getDaysWorkedFlow(worker.id)
+                    .collectAsState(initial = 0)
+                val balance = (daysWorked * worker.dailyWage) - totalAdvance
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        selectedWorker = worker
-                        showAddEntryDialog = true
-                    }
-                ) {
+                Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(worker.name, style = MaterialTheme.typography.titleMedium)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(worker.name, style = MaterialTheme.typography.titleMedium)
+                            TextButton(
+                                onClick = { viewModel.deleteWorker(worker.id) },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("Remove")
+                            }
+                        }
                         Text("Daily Wage: ₹${worker.dailyWage}")
+                        Text("Days Present: $daysWorked")
+                        Text("Total Advance: ₹${String.format("%.2f", totalAdvance)}")
                         Text("Balance Due: ₹${String.format("%.2f", balance)}")
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Button(
+                            onClick = {
+                                selectedWorker = worker
+                                showAddEntryDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Add Entry")
+                        }
                     }
                 }
             }

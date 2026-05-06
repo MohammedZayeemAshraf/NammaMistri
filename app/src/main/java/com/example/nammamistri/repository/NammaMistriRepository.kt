@@ -20,12 +20,15 @@ class NammaMistriRepository(
     suspend fun insertWorker(worker: Worker) = workerDao.insert(worker)
     fun getWorkersBySite(siteId: Long) = workerDao.getWorkersBySite(siteId)
     suspend fun getWorkerById(id: Long) = workerDao.getWorkerById(id)
+    suspend fun deleteWorker(workerId: Long) = workerDao.deleteById(workerId)
 
     // Labor Entries
     suspend fun insertLaborEntry(entry: LaborEntry) = laborEntryDao.insert(entry)
     fun getEntriesByWorker(workerId: Long) = laborEntryDao.getEntriesByWorker(workerId)
     suspend fun getTotalAdvance(workerId: Long) = laborEntryDao.getTotalAdvance(workerId) ?: 0.0
     suspend fun getTotalDaysWorked(workerId: Long) = laborEntryDao.getTotalDaysWorked(workerId)
+    fun getTotalAdvanceFlow(workerId: Long) = laborEntryDao.getTotalAdvanceFlow(workerId)
+    fun getTotalDaysWorkedFlow(workerId: Long) = laborEntryDao.getTotalDaysWorkedFlow(workerId)
 
     // Material Rates
     suspend fun insertMaterialRate(rate: MaterialRate) = materialRateDao.insert(rate)

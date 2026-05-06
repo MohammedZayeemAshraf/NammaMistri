@@ -35,4 +35,18 @@ class LaborViewModel(private val repository: NammaMistriRepository) : ViewModel(
         val wagesEarned = daysWorked * worker.dailyWage
         return wagesEarned - totalAdvance
     }
+
+    suspend fun getTotalAdvance(workerId: Long): Double = repository.getTotalAdvance(workerId)
+
+    suspend fun getDaysWorked(workerId: Long): Int = repository.getTotalDaysWorked(workerId)
+
+    fun getTotalAdvanceFlow(workerId: Long) = repository.getTotalAdvanceFlow(workerId)
+
+    fun getDaysWorkedFlow(workerId: Long) = repository.getTotalDaysWorkedFlow(workerId)
+
+    fun deleteWorker(workerId: Long) {
+        viewModelScope.launch {
+            repository.deleteWorker(workerId)
+        }
+    }
 }

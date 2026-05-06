@@ -19,4 +19,10 @@ interface LaborEntryDao {
 
     @Query("SELECT COUNT(*) FROM labor_entries WHERE workerId = :workerId AND present = 1")
     suspend fun getTotalDaysWorked(workerId: Long): Int
+
+    @Query("SELECT COALESCE(SUM(advance), 0.0) FROM labor_entries WHERE workerId = :workerId")
+    fun getTotalAdvanceFlow(workerId: Long): Flow<Double>
+
+    @Query("SELECT COUNT(*) FROM labor_entries WHERE workerId = :workerId AND present = 1")
+    fun getTotalDaysWorkedFlow(workerId: Long): Flow<Int>
 }

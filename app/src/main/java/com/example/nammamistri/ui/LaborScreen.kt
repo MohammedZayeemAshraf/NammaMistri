@@ -1,17 +1,25 @@
 package com.example.nammamistri.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nammamistri.data.Worker
+import com.example.nammamistri.ui.theme.BalanceGreen
+import com.example.nammamistri.ui.theme.BalanceRed
 import com.example.nammamistri.viewmodel.LaborViewModel
 import kotlinx.coroutines.launch
 
@@ -26,8 +34,11 @@ fun LaborScreen(viewModel: LaborViewModel = viewModel()) {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddWorkerDialog = true }) {
-                Text("+")
+            ExtendedFloatingActionButton(
+                onClick = { showAddWorkerDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Text("+ Add Worker", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     ) { padding ->
@@ -35,11 +46,22 @@ fun LaborScreen(viewModel: LaborViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                Text("Labor Team", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    "Labor Team",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "${workers.size} worker${if (workers.size != 1) "s" else ""}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
             items(workers) { worker ->
@@ -48,15 +70,48 @@ fun LaborScreen(viewModel: LaborViewModel = viewModel()) {
                 val daysWorked by viewModel.getDaysWorkedFlow(worker.id)
                     .collectAsState(initial = 0)
                 val balance = (daysWorked * worker.dailyWage) - totalAdvance
+                val balanceColor = if (balance >= 0) BalanceGreen else BalanceRed
+                val initials = worker.name.trim().split(" ")
+                    .take(2).joinToString("") { it.first().uppercaseChar().toString() }
 
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        // Header row: avatar + name + remove button
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(worker.name, style = MaterialTheme.typography.titleMedium)
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    initials,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    worker.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    "₹${worker.dailyWage}/day",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
                             TextButton(
                                 onClick = { viewModel.deleteWorker(worker.id) },
                                 colors = ButtonDefaults.textButtonColors(
@@ -66,19 +121,53 @@ fun LaborScreen(viewModel: LaborViewModel = viewModel()) {
                                 Text("Remove")
                             }
                         }
-                        Text("Daily Wage: ₹${worker.dailyWage}")
-                        Text("Days Present: $daysWorked")
-                        Text("Total Advance: ₹${String.format("%.2f", totalAdvance)}")
-                        Text("Balance Due: ₹${String.format("%.2f", balance)}")
-                        Spacer(modifier = Modifier.height(4.dp))
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                        // Stats row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            StatChip(label = "Days", value = "$daysWorked")
+                            StatChip(label = "Advance", value = "₹${String.format("%.0f", totalAdvance)}")
+                            StatChip(
+                                label = "Balance",
+                                value = "₹${String.format("%.0f", kotlin.math.abs(balance))}",
+                                valueColor = balanceColor,
+                                sublabel = if (balance >= 0) "to pay" else "overpaid"
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Button(
                             onClick = {
                                 selectedWorker = worker
                                 showAddEntryDialog = true
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Add Entry")
+                            Text("Add Today's Entry")
+                        }
+                    }
+                }
+            }
+
+            if (workers.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("No workers added yet", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Tap '+ Add Worker' to get started",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
                         }
                     }
                 }
@@ -105,6 +194,24 @@ fun LaborScreen(viewModel: LaborViewModel = viewModel()) {
                 showAddEntryDialog = false
             }
         )
+    }
+}
+
+@Composable
+fun StatChip(label: String, value: String, valueColor: Color = Color.Unspecified, sublabel: String = "") {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = valueColor
+        )
+        Text(label, style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+        if (sublabel.isNotEmpty()) {
+            Text(sublabel, style = MaterialTheme.typography.labelSmall,
+                color = valueColor.copy(alpha = 0.8f))
+        }
     }
 }
 

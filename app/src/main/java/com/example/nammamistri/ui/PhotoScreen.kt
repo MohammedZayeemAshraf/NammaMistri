@@ -9,6 +9,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -85,8 +87,24 @@ fun PhotoScreen(viewModel: PhotoViewModel = viewModel()) {
                                 .height(200.dp)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(photo.description)
-                        Text("Date: ${java.util.Date(photo.date)}")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(photo.description)
+                                Text("Date: ${java.util.Date(photo.date)}")
+                            }
+                            TextButton(
+                                onClick = { viewModel.deletePhoto(photo.id) },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("Delete")
+                            }
+                        }
                     }
                 }
             }

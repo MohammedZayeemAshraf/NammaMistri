@@ -13,4 +13,7 @@ interface PhotoDao {
 
     @Query("SELECT * FROM photos WHERE siteId = :siteId ORDER BY date DESC")
     fun getPhotosBySite(siteId: Long): Flow<List<Photo>>
+
+    @Query("DELETE FROM photos WHERE id = :photoId")
+    suspend fun deleteById(photoId: Long)
 }

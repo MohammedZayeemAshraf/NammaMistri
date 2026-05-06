@@ -36,4 +36,5 @@ class NammaMistriRepository(
     // Photos
     suspend fun insertPhoto(photo: Photo) = photoDao.insert(photo)
     fun getPhotosBySite(siteId: Long) = photoDao.getPhotosBySite(siteId)
+    suspend fun deletePhoto(photoId: Long) = photoDao.deleteById(photoId)
 }

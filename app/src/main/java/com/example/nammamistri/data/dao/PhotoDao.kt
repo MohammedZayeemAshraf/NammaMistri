@@ -1,0 +1,16 @@
+package com.example.nammamistri.data.dao
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.Query
+import com.example.nammamistri.data.Photo
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface PhotoDao {
+    @Insert
+    suspend fun insert(photo: Photo): Long
+
+    @Query("SELECT * FROM photos WHERE siteId = :siteId ORDER BY date DESC")
+    fun getPhotosBySite(siteId: Long): Flow<List<Photo>>
+}

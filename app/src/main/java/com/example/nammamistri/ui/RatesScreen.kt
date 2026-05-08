@@ -3,11 +3,13 @@ package com.example.nammamistri.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,8 +24,11 @@ fun RatesScreen(viewModel: RatesViewModel = viewModel()) {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddRateDialog = true }) {
-                Text("+")
+            ExtendedFloatingActionButton(
+                onClick = { showAddRateDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Text("+ Add Rate", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     ) { padding ->
@@ -31,25 +36,76 @@ fun RatesScreen(viewModel: RatesViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                Text("Material Rates", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    "Material Rates",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "${rates.size} material${if (rates.size != 1) "s" else ""} listed",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
             items(rates) { rate ->
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(rate.materialName, style = MaterialTheme.typography.titleMedium)
-                            Text("Unit: ${rate.unit}")
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                rate.materialName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "per ${rate.unit}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                            )
                         }
-                        Text("₹${rate.rate}")
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text(
+                                "₹${String.format("%.0f", rate.rate)}",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (rates.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("No rates added yet", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Tap '+ Add Rate' to add material prices",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                        }
                     }
                 }
             }
@@ -77,22 +133,28 @@ fun AddRateDialog(onDismiss: () -> Unit, onAdd: (String, String, Double) -> Unit
         onDismissRequest = onDismiss,
         title = { Text("Add Material Rate") },
         text = {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Material Name") }
+                    label = { Text("Material Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
                 OutlinedTextField(
                     value = unit,
                     onValueChange = { unit = it },
-                    label = { Text("Unit") }
+                    label = { Text("Unit (e.g. bag, sq ft)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
                 OutlinedTextField(
                     value = rate,
                     onValueChange = { rate = it },
-                    label = { Text("Rate") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    label = { Text("Rate (₹)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
             }
         },
@@ -105,7 +167,7 @@ fun AddRateDialog(onDismiss: () -> Unit, onAdd: (String, String, Double) -> Unit
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
         }

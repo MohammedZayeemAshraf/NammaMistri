@@ -2,19 +2,43 @@ package com.example.nammamistri
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.lifecycleScope
@@ -48,7 +72,51 @@ class MainActivity : ComponentActivity() {
                 when {
                     initError.value != null && splashFinished.value -> ErrorScreen(initError.value!!)
                     !splashFinished.value || repositoryState.value == null -> SplashScreen(onSplashFinished = { splashFinished.value = true })
-                    else -> MainScreen(repositoryState.value!!)
+                    else -> {
+                        val drawerState = rememberDrawerState(DrawerValue.Closed)
+                        val scope = rememberCoroutineScope()
+                        var currentScreen by rememberSaveable { mutableStateOf("Home") }
+
+                        ModalNavigationDrawer(
+                            drawerState = drawerState,
+                            drawerContent = {
+                                ModalDrawerSheet {
+                                    Text(
+                                        text = "NAMMA MISTRI",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                    val drawerItems = listOf(
+                                        DrawerItem("Home", Icons.Default.List, "Home"),
+                                        DrawerItem("Add Site", Icons.Default.Add, "Add Site"),
+                                        DrawerItem("Calculator", Icons.Default.Calculate, "Calculator"),
+                                        DrawerItem("Labor Diary", Icons.Default.Person, "Labor"),
+                                        DrawerItem("Site Photos", Icons.Default.PhotoCamera, "Photos"),
+                                        DrawerItem("Standard Rates", Icons.Default.Assessment, "Rates")
+                                    )
+                                    drawerItems.forEach { item ->
+                                        NavigationDrawerItem(
+                                            label = { Text(item.title) },
+                                            selected = currentScreen == item.route,
+                                            onClick = {
+                                                currentScreen = item.route
+                                                scope.launch { drawerState.close() }
+                                            },
+                                            icon = { Icon(item.icon, contentDescription = item.title) },
+                                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            MainScreen(
+                                repository = repositoryState.value!!,
+                                currentScreen = currentScreen,
+                                onScreenSelected = { currentScreen = it },
+                                openDrawer = { scope.launch { drawerState.open() } }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -168,35 +236,257 @@ fun ErrorScreen(errorMessage: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(repository: NammaMistriRepository) {
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Calculator", "Team", "Photos", "Rates")
+fun MainScreen(
+    repository: NammaMistriRepository,
+    currentScreen: String,
+    onScreenSelected: (String) -> Unit,
+    openDrawer: () -> Unit
+) {
+    val sites by repository.getAllSites().collectAsState(initial = emptyList())
+    val isHome = currentScreen == "Home"
 
     Scaffold(
         topBar = {
-            Column {
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text(title) }
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = openDrawer) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Open navigation drawer"
                         )
+                    }
+                },
+                title = { Text(if (isHome) "Dashboard" else currentScreen) }
+            )
+        }
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            when (currentScreen) {
+                "Home" -> HomeScreen(
+                    sites = sites,
+                    onQuickAccessSelected = { onScreenSelected(it) }
+                )
+                "Add Site" -> AddSiteScreen(
+                    repository = repository,
+                    onSaved = { onScreenSelected("Home") }
+                )
+                "Calculator" -> CalculatorScreen(viewModel(factory = CalculatorViewModelFactory(repository)))
+                "Labor" -> LaborScreen(viewModel(factory = LaborViewModelFactory(repository)))
+                "Photos" -> PhotoScreen(viewModel(factory = PhotoViewModelFactory(repository)))
+                "Rates" -> RatesScreen(viewModel(factory = RatesViewModelFactory(repository)))
+                else -> HomeScreen(
+                    sites = sites,
+                    onQuickAccessSelected = { onScreenSelected(it) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeScreen(sites: List<com.example.nammamistri.data.Site>, onQuickAccessSelected: (String) -> Unit) {
+    val homeActions = listOf(
+        QuickAccessItem("Calculator", Icons.Default.Calculate, "Calculator"),
+        QuickAccessItem("Labor Diary", Icons.Default.Person, "Labor"),
+        QuickAccessItem("Site Photos", Icons.Default.PhotoCamera, "Photos"),
+        QuickAccessItem("Standard Rates", Icons.Default.Assessment, "Rates")
+    )
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp)
+    ) {
+        item {
+            Image(
+                painter = painterResource(id = R.drawable.banner),
+                contentDescription = "Banner",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(20.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+        item {
+            Column {
+                Text(
+                    text = "Quick Access",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    homeActions.chunked(2).forEach { rowActions ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowActions.forEach { action ->
+                                QuickAccessCard(
+                                    action = action,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onQuickAccessSelected(action.destination) }
+                                )
+                            }
+                            if (rowActions.size < 2) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
             }
         }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            when (selectedTab) {
-                0 -> CalculatorScreen(viewModel(factory = CalculatorViewModelFactory(repository)))
-                1 -> LaborScreen(viewModel(factory = LaborViewModelFactory(repository)))
-                2 -> PhotoScreen(viewModel(factory = PhotoViewModelFactory(repository)))
-                3 -> RatesScreen(viewModel(factory = RatesViewModelFactory(repository)))
+        item {
+            Text(
+                text = "Active Sites",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        if (sites.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text("No active sites yet", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Create a site or add project details to track active work.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
+        } else {
+            items(sites) { site ->
+                SiteProgressCard(site = site)
+            }
+        }
+    }
+}
+
+data class QuickAccessItem(val title: String, val icon: ImageVector, val destination: String)
+
+data class DrawerItem(val title: String, val icon: ImageVector, val route: String)
+
+@Composable
+fun AddSiteScreen(repository: NammaMistriRepository, onSaved: () -> Unit) {
+    val context = LocalContext.current
+    var siteName by rememberSaveable { mutableStateOf("") }
+    var siteLocation by rememberSaveable { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Add Site", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+        OutlinedTextField(
+            value = siteName,
+            onValueChange = { siteName = it },
+            label = { Text("Site name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = siteLocation,
+            onValueChange = { siteLocation = it },
+            label = { Text("Location") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Button(
+            onClick = {
+                if (siteName.isBlank() || siteLocation.isBlank()) {
+                    Toast.makeText(context, "Enter name and location", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+                scope.launch {
+                    repository.insertSite(com.example.nammamistri.data.Site(name = siteName.trim(), location = siteLocation.trim()))
+                    onSaved()
+                    Toast.makeText(context, "Site added", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text("Save Site")
+        }
+    }
+}
+
+@Composable
+fun QuickAccessCard(action: QuickAccessItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Card(
+        modifier = modifier
+            .aspectRatio(1f)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = action.icon,
+                    contentDescription = action.title,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(34.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = action.title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun SiteProgressCard(site: com.example.nammamistri.data.Site) {
+    val progress = ((site.id % 5) * 20).coerceIn(20L, 100L)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(site.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(site.location, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            Spacer(modifier = Modifier.height(12.dp))
+            LinearProgressIndicator(
+                progress = progress / 100f,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Progress: $progress%", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

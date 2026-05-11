@@ -6,7 +6,7 @@ import com.example.nammamistri.data.dao.*
 
 @Database(
     entities = [Site::class, Worker::class, LaborEntry::class, MaterialRate::class, Photo::class],
-    version = 1,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

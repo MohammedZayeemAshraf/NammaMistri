@@ -1,5 +1,3 @@
-package com.example.nammamistri
-
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -57,9 +55,6 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
     private val TAG = "MainActivity"
-    private val repositoryState = mutableStateOf<NammaMistriRepository?>(null)
-    private val initError = mutableStateOf<String?>(null)
-    private val splashFinished = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,14 +63,63 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "onCreate: Starting MainActivity initialization")
 
         setContent {
+            var repository by remember { mutableStateOf<NammaMistriRepository?>(null) }
+            var initError by remember { mutableStateOf<String?>(null) }
+
+            LaunchedEffect(Unit) {
+                try {
+                    Log.d(TAG, "LaunchedEffect: Starting database initialization")
+                    database = withContext(Dispatchers.IO) {
+                        Room.databaseBuilder(
+                            applicationContext,
+                            AppDatabase::class.java,
+                            "namma_mistri_v2_db"
+                        ).fallbackToDestructiveMigration().build()
+                    }
+                    Log.d(TAG, "LaunchedEffect: Database built successfully")
+
+                    val repo = NammaMistriRepository(
+                        database.siteDao(),
+                        database.workerDao(),
+                        database.laborEntryDao(),
+                        database.materialRateDao(),
+                        database.photoDao()
+                    )
+                    Log.d(TAG, "LaunchedEffect: Repository created successfully")
+
+                    withContext(Dispatchers.IO) {
+                        try {
+                            Log.d(TAG, "LaunchedEffect: Checking and seeding default data")
+                            val rates = repo.getAllMaterialRates().first()
+                            if (rates.isEmpty()) {
+                                Log.d(TAG, "LaunchedEffect: Inserting default rates")
+                                repo.insertMaterialRate(com.example.nammamistri.data.MaterialRate(materialName = "Brick", unit = "piece", rate = 10.0))
+                                repo.insertMaterialRate(com.example.nammamistri.data.MaterialRate(materialName = "Cement", unit = "bag", rate = 400.0))
+                                repo.insertMaterialRate(com.example.nammamistri.data.MaterialRate(materialName = "Sand", unit = "cubic meter", rate = 1500.0))
+                            }
+                            Log.d(TAG, "LaunchedEffect: Data seeding completed successfully")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "LaunchedEffect: Error seeding data", e)
+                        }
+                    }
+
+                    repository = repo
+                } catch (e: Exception) {
+                    Log.e(TAG, "LaunchedEffect: Error during database initialization", e)
+                    e.printStackTrace()
+                    initError = e.message ?: "Unknown initialization error"
+                }
+            }
+
             NAMMAMISTRITheme {
                 when {
-                    initError.value != null && splashFinished.value -> ErrorScreen(initError.value!!)
-                    !splashFinished.value || repositoryState.value == null -> SplashScreen(onSplashFinished = { splashFinished.value = true })
+                    initError != null -> ErrorScreen(initError!!)
+                    repository == null -> SplashScreen()
                     else -> {
                         val drawerState = rememberDrawerState(DrawerValue.Closed)
                         val scope = rememberCoroutineScope()
                         var currentScreen by rememberSaveable { mutableStateOf("Home") }
+                        var selectedSiteId by rememberSaveable { mutableStateOf<Long?>(null) }
 
                         ModalNavigationDrawer(
                             drawerState = drawerState,
@@ -110,62 +154,15 @@ class MainActivity : ComponentActivity() {
                             }
                         ) {
                             MainScreen(
-                                repository = repositoryState.value!!,
+                                repository = repository!!,
                                 currentScreen = currentScreen,
                                 onScreenSelected = { currentScreen = it },
-                                openDrawer = { scope.launch { drawerState.open() } }
+                                openDrawer = { scope.launch { drawerState.open() } },
+                                selectedSiteId = selectedSiteId,
+                                onSelectSite = { selectedSiteId = it }
                             )
                         }
                     }
-                }
-            }
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                database = Room.databaseBuilder(
-                    applicationContext,
-                    AppDatabase::class.java,
-                    "namma_mistri_db"
-                ).build()
-                Log.d(TAG, "onCreate: Database built successfully")
-
-                val repository = NammaMistriRepository(
-                    database.siteDao(),
-                    database.workerDao(),
-                    database.laborEntryDao(),
-                    database.materialRateDao(),
-                    database.photoDao()
-                )
-                Log.d(TAG, "onCreate: Repository created successfully")
-
-                try {
-                    Log.d(TAG, "onCreate: Checking and seeding default data")
-                    val sites = repository.getAllSites().first()
-                    if (sites.isEmpty()) {
-                        Log.d(TAG, "onCreate: Inserting default site")
-                        repository.insertSite(com.example.nammamistri.data.Site(name = "Default Site", location = "Local"))
-                    }
-                    val rates = repository.getAllMaterialRates().first()
-                    if (rates.isEmpty()) {
-                        Log.d(TAG, "onCreate: Inserting default rates")
-                        repository.insertMaterialRate(com.example.nammamistri.data.MaterialRate(materialName = "Brick", unit = "piece", rate = 10.0))
-                        repository.insertMaterialRate(com.example.nammamistri.data.MaterialRate(materialName = "Cement", unit = "bag", rate = 400.0))
-                        repository.insertMaterialRate(com.example.nammamistri.data.MaterialRate(materialName = "Sand", unit = "cubic meter", rate = 1500.0))
-                    }
-                    Log.d(TAG, "onCreate: Data seeding completed successfully")
-                } catch (e: Exception) {
-                    Log.e(TAG, "onCreate: Error seeding data", e)
-                }
-
-                withContext(Dispatchers.Main) {
-                    repositoryState.value = repository
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "onCreate: Error during database initialization", e)
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    initError.value = e.message ?: "Unknown initialization error"
                 }
             }
         }
@@ -173,7 +170,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun SplashScreen(onSplashFinished: () -> Unit) {
+fun SplashScreen() {
     var startAnimation by remember { mutableStateOf(false) }
     val logoScale by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0.7f,
@@ -187,7 +184,6 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
     LaunchedEffect(Unit) {
         startAnimation = true
         delay(3000)
-        onSplashFinished()
     }
 
     Box(
@@ -200,7 +196,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
             modifier = Modifier.padding(24.dp)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.splash_logo),
+                painter = painterResource(id = com.example.nammamistri.R.drawable.splash_logo),
                 contentDescription = "App logo",
                 modifier = Modifier
                     .size(180.dp)
@@ -240,7 +236,9 @@ fun MainScreen(
     repository: NammaMistriRepository,
     currentScreen: String,
     onScreenSelected: (String) -> Unit,
-    openDrawer: () -> Unit
+    openDrawer: () -> Unit,
+    selectedSiteId: Long?,
+    onSelectSite: (Long?) -> Unit
 ) {
     val sites by repository.getAllSites().collectAsState(initial = emptyList())
     val isHome = currentScreen == "Home"
@@ -264,7 +262,11 @@ fun MainScreen(
             when (currentScreen) {
                 "Home" -> HomeScreen(
                     sites = sites,
-                    onQuickAccessSelected = { onScreenSelected(it) }
+                    onQuickAccessSelected = { onScreenSelected(it) },
+                    onSiteSelected = { siteId ->
+                        onSelectSite(siteId)
+                        onScreenSelected("Photos")
+                    }
                 )
                 "Add Site" -> AddSiteScreen(
                     repository = repository,
@@ -272,11 +274,19 @@ fun MainScreen(
                 )
                 "Calculator" -> CalculatorScreen(viewModel(factory = CalculatorViewModelFactory(repository)))
                 "Labor" -> LaborScreen(viewModel(factory = LaborViewModelFactory(repository)))
-                "Photos" -> PhotoScreen(viewModel(factory = PhotoViewModelFactory(repository)))
+                "Photos" -> PhotoScreen(
+                    repository = repository,
+                    selectedSiteId = selectedSiteId,
+                    onSelectSite = onSelectSite
+                )
                 "Rates" -> RatesScreen(viewModel(factory = RatesViewModelFactory(repository)))
                 else -> HomeScreen(
                     sites = sites,
-                    onQuickAccessSelected = { onScreenSelected(it) }
+                    onQuickAccessSelected = { onScreenSelected(it) },
+                    onSiteSelected = { siteId ->
+                        onSelectSite(siteId)
+                        onScreenSelected("Photos")
+                    }
                 )
             }
         }
@@ -284,7 +294,11 @@ fun MainScreen(
 }
 
 @Composable
-fun HomeScreen(sites: List<com.example.nammamistri.data.Site>, onQuickAccessSelected: (String) -> Unit) {
+fun HomeScreen(
+    sites: List<com.example.nammamistri.data.Site>,
+    onQuickAccessSelected: (String) -> Unit,
+    onSiteSelected: (Long) -> Unit
+) {
     val homeActions = listOf(
         QuickAccessItem("Calculator", Icons.Default.Calculate, "Calculator"),
         QuickAccessItem("Labor Diary", Icons.Default.Person, "Labor"),
@@ -301,7 +315,7 @@ fun HomeScreen(sites: List<com.example.nammamistri.data.Site>, onQuickAccessSele
     ) {
         item {
             Image(
-                painter = painterResource(id = R.drawable.banner),
+                painter = painterResource(id = com.example.nammamistri.R.drawable.banner),
                 contentDescription = "Banner",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -366,7 +380,7 @@ fun HomeScreen(sites: List<com.example.nammamistri.data.Site>, onQuickAccessSele
             }
         } else {
             items(sites) { site ->
-                SiteProgressCard(site = site)
+                SiteProgressCard(site = site, onClick = { onSiteSelected(site.id) })
             }
         }
     }
@@ -465,11 +479,13 @@ fun QuickAccessCard(action: QuickAccessItem, modifier: Modifier = Modifier, onCl
 }
 
 @Composable
-fun SiteProgressCard(site: com.example.nammamistri.data.Site) {
-    val progress = ((site.id % 5) * 20).coerceIn(20L, 100L)
+fun SiteProgressCard(site: com.example.nammamistri.data.Site, onClick: () -> Unit) {
+    val progress = site.progress.coerceIn(0, 100)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -487,6 +503,12 @@ fun SiteProgressCard(site: com.example.nammamistri.data.Site) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text("Progress: $progress%", style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tap to open site photos and update progress",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

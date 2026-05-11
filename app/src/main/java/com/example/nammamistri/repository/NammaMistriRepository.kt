@@ -13,6 +13,7 @@ class NammaMistriRepository(
 ) {
     // Sites
     suspend fun insertSite(site: Site) = siteDao.insert(site)
+    suspend fun updateSite(site: Site) = siteDao.update(site)
     fun getAllSites() = siteDao.getAllSites()
     suspend fun getSiteById(id: Long) = siteDao.getSiteById(id)
 

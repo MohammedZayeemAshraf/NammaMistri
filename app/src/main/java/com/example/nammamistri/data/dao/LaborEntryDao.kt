@@ -17,12 +17,12 @@ interface LaborEntryDao {
     @Query("SELECT SUM(advance) FROM labor_entries WHERE workerId = :workerId")
     suspend fun getTotalAdvance(workerId: Long): Double?
 
-    @Query("SELECT COUNT(*) FROM labor_entries WHERE workerId = :workerId AND present = 1")
-    suspend fun getTotalDaysWorked(workerId: Long): Int
+    @Query("SELECT SUM(attendance) FROM labor_entries WHERE workerId = :workerId")
+    suspend fun getTotalDaysWorked(workerId: Long): Double?
 
     @Query("SELECT COALESCE(SUM(advance), 0.0) FROM labor_entries WHERE workerId = :workerId")
     fun getTotalAdvanceFlow(workerId: Long): Flow<Double>
 
-    @Query("SELECT COUNT(*) FROM labor_entries WHERE workerId = :workerId AND present = 1")
-    fun getTotalDaysWorkedFlow(workerId: Long): Flow<Int>
+    @Query("SELECT COALESCE(SUM(attendance), 0.0) FROM labor_entries WHERE workerId = :workerId")
+    fun getTotalDaysWorkedFlow(workerId: Long): Flow<Double>
 }

@@ -9,5 +9,6 @@ data class Site(
     val id: Long = 0,
     val name: String,
     val location: String,
+    val progress: Int = 0,
     val createdDate: Long = System.currentTimeMillis()
 )

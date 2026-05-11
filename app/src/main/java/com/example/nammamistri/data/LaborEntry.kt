@@ -9,6 +9,7 @@ data class LaborEntry(
     val id: Long = 0,
     val workerId: Long,
     val date: Long,
-    val present: Boolean,
-    val advance: Double = 0.0
+    val attendance: Double = 1.0, // 1.0 = Full Day, 0.5 = Half Day, 0.0 = Absent
+    val advance: Double = 0.0,
+    val paymentMode: String? = null
 )

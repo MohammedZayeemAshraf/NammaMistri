@@ -1,176 +1,155 @@
 package com.example.nammamistri.ui
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.nammamistri.data.Worker
-import com.example.nammamistri.ui.theme.BalanceGreen
-import com.example.nammamistri.ui.theme.BalanceRed
+import com.example.nammamistri.ui.theme.*
 import com.example.nammamistri.viewmodel.LaborViewModel
-import kotlinx.coroutines.launch
+import com.example.nammamistri.viewmodel.TeamSummary
+import com.example.nammamistri.viewmodel.WorkerState
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LaborScreen(viewModel: LaborViewModel = viewModel()) {
-    val workers by viewModel.workers.collectAsState(initial = emptyList())
-    val scope = rememberCoroutineScope()
+    val workerStates by viewModel.workerStates.collectAsState(initial = emptyList())
+    val teamSummary by viewModel.teamSummary.collectAsState(initial = TeamSummary())
+    val selectedDate by viewModel.selectedDate.collectAsState()
+    
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Attendance", "Payments", "Summary")
+    val context = LocalContext.current
+    
     var showAddWorkerDialog by remember { mutableStateOf(false) }
-    var showAddEntryDialog by remember { mutableStateOf(false) }
-    var selectedWorker by remember { mutableStateOf<Worker?>(null) }
+
+    val dateStr = SimpleDateFormat("dd MMM, yyyy", Locale.getDefault()).format(Date(selectedDate))
 
     Scaffold(
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAddWorkerDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Text("+ Add Worker", color = MaterialTheme.colorScheme.onPrimary)
-            }
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
-        ) {
-            item {
-                Text(
-                    "Labor Team",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "${workers.size} worker${if (workers.size != 1) "s" else ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
-            items(workers) { worker ->
-                val totalAdvance by viewModel.getTotalAdvanceFlow(worker.id)
-                    .collectAsState(initial = 0.0)
-                val daysWorked by viewModel.getDaysWorkedFlow(worker.id)
-                    .collectAsState(initial = 0)
-                val balance = (daysWorked * worker.dailyWage) - totalAdvance
-                val balanceColor = if (balance >= 0) BalanceGreen else BalanceRed
-                val initials = worker.name.trim().split(" ")
-                    .take(2).joinToString("") { it.first().uppercaseChar().toString() }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        // Header row: avatar + name + remove button
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    initials,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    worker.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    "₹${worker.dailyWage}/day",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                )
-                            }
-                            TextButton(
-                                onClick = { viewModel.deleteWorker(worker.id) },
-                                colors = ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Text("Remove")
-                            }
-                        }
-
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                        // Stats row
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            StatChip(label = "Days", value = "$daysWorked")
-                            StatChip(label = "Advance", value = "₹${String.format("%.0f", totalAdvance)}")
-                            StatChip(
-                                label = "Balance",
-                                value = "₹${String.format("%.0f", kotlin.math.abs(balance))}",
-                                valueColor = balanceColor,
-                                sublabel = if (balance >= 0) "to pay" else "overpaid"
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Button(
-                            onClick = {
-                                selectedWorker = worker
-                                showAddEntryDialog = true
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Column {
+                        Text("Labor Diary", fontWeight = FontWeight.Bold, color = TextDark, fontSize = 20.sp)
+                        Text(dateStr, fontSize = 12.sp, color = TextGray)
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { /* Handle back */ }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDark)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { /* Filter */ }) {
+                        Icon(Icons.Default.FilterList, contentDescription = "Filter", tint = PrimaryOrange)
+                    }
+                    IconButton(onClick = {
+                        val calendar = Calendar.getInstance().apply { timeInMillis = selectedDate }
+                        DatePickerDialog(
+                            context,
+                            { _, y, m, d ->
+                                val newCal = Calendar.getInstance().apply { set(y, m, d) }
+                                viewModel.selectDate(newCal.timeInMillis)
                             },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Add Today's Entry")
-                        }
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        ).show()
+                    }) {
+                        Icon(Icons.Default.CalendarToday, contentDescription = "Calendar", tint = PrimaryOrange)
                     }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundCream)
+            )
+        },
+        floatingActionButton = {
+            Button(
+                onClick = { showAddWorkerDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .height(56.dp)
+                    .padding(horizontal = 4.dp)
+                    .shadow(elevation = 12.dp, shape = RoundedCornerShape(16.dp), spotColor = PrimaryOrange)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Add Worker", fontWeight = FontWeight.Bold)
+            }
+        },
+        containerColor = BackgroundCream
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = BackgroundCream,
+                contentColor = PrimaryOrange,
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = PrimaryOrange
+                    )
+                },
+                divider = {}
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { 
+                            Text(title, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium, fontSize = 14.sp) 
+                        }
+                    )
                 }
             }
 
-            if (workers.isEmpty()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No workers added yet", style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                "Tap '+ Add Worker' to get started",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    SummaryCard(teamSummary)
+                }
+
+                when (selectedTab) {
+                    0, 1 -> {
+                        items(workerStates) { state ->
+                            WorkerCard(
+                                workerState = state,
+                                viewModel = viewModel,
+                                isPaymentMode = selectedTab == 1
                             )
                         }
                     }
+                    2 -> {
+                        item { SummaryDetailSection(teamSummary) }
+                    }
                 }
+                
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
     }
@@ -178,116 +157,183 @@ fun LaborScreen(viewModel: LaborViewModel = viewModel()) {
     if (showAddWorkerDialog) {
         AddWorkerDialog(
             onDismiss = { showAddWorkerDialog = false },
-            onAdd = { name, wage ->
-                viewModel.addWorker(name, wage)
+            onAdd = { name, wage, role ->
+                viewModel.addWorker(name, wage, role)
                 showAddWorkerDialog = false
             }
         )
     }
-
-    if (showAddEntryDialog && selectedWorker != null) {
-        AddLaborEntryDialog(
-            worker = selectedWorker!!,
-            onDismiss = { showAddEntryDialog = false },
-            onAdd = { present, advance ->
-                viewModel.addLaborEntry(selectedWorker!!.id, System.currentTimeMillis(), present, advance)
-                showAddEntryDialog = false
-            }
-        )
-    }
 }
 
 @Composable
-fun StatChip(label: String, value: String, valueColor: Color = Color.Unspecified, sublabel: String = "") {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = valueColor
-        )
-        Text(label, style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-        if (sublabel.isNotEmpty()) {
-            Text(sublabel, style = MaterialTheme.typography.labelSmall,
-                color = valueColor.copy(alpha = 0.8f))
+fun SummaryCard(summary: TeamSummary) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 10.dp, shape = RoundedCornerShape(20.dp), spotColor = Color.LightGray.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            SummaryItem("Workers", "${summary.totalWorkers}", Modifier.weight(1f))
+            SummaryItem("Earned", "₹${summary.totalEarnings.toInt()}", Modifier.weight(1.2f))
+            SummaryItem("Paid", "₹${summary.totalPaid.toInt()}", Modifier.weight(1f))
+            SummaryItem("Balance", "₹${summary.totalBalance.toInt()}", Modifier.weight(1.2f), PrimaryOrange)
         }
     }
 }
 
 @Composable
-fun AddWorkerDialog(onDismiss: () -> Unit, onAdd: (String, Double) -> Unit) {
+fun SummaryItem(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = TextDark) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = valueColor)
+        Text(label, fontSize = 11.sp, color = TextGray, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+fun WorkerCard(workerState: WorkerState, viewModel: LaborViewModel, isPaymentMode: Boolean) {
+    val worker = workerState.worker
+    val initials = worker.name.split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(20.dp), spotColor = Color.LightGray.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(44.dp).clip(CircleShape).background(PrimaryOrange.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(initials, color = PrimaryOrange, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(worker.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextDark)
+                    Text(worker.role, fontSize = 11.sp, color = TextGray)
+                }
+
+                if (!isPaymentMode) {
+                    StatusChip(
+                        status = when (workerState.todayEntry?.attendance) {
+                            1.0 -> "Present"
+                            0.5 -> "Half Day"
+                            0.0 -> "Absent"
+                            else -> "Mark"
+                        },
+                        onClick = {
+                            val next = when(workerState.todayEntry?.attendance) {
+                                1.0 -> 0.5
+                                0.5 -> 0.0
+                                else -> 1.0
+                            }
+                            viewModel.markAttendance(worker.id, next)
+                        }
+                    )
+                } else {
+                    IconButton(onClick = { /* Open Payment Dialog */ }) {
+                        Icon(Icons.Default.Payment, contentDescription = "Pay", tint = PrimaryOrange)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            HorizontalDivider(color = BackgroundCream, thickness = 1.dp)
+            Spacer(Modifier.height(12.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                WorkerStat("Daily Wage", "₹${worker.dailyWage.toInt()}")
+                WorkerStat("Earned", "₹${workerState.totalEarned.toInt()}")
+                WorkerStat("Paid", "₹${workerState.totalPaid.toInt()}", AttendanceAbsent)
+                WorkerStat("Balance", "₹${workerState.balance.toInt()}", PrimaryOrange)
+            }
+        }
+    }
+}
+
+@Composable
+fun WorkerStat(label: String, value: String, color: Color = TextDark) {
+    Column {
+        Text(label, fontSize = 10.sp, color = TextGray)
+        Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color)
+    }
+}
+
+@Composable
+fun StatusChip(status: String, onClick: () -> Unit) {
+    val (bgColor, textColor) = when (status) {
+        "Present" -> AttendancePresent.copy(alpha = 0.15f) to AttendancePresent
+        "Absent" -> AttendanceAbsent.copy(alpha = 0.15f) to AttendanceAbsent
+        "Half Day" -> AttendanceHalfDay.copy(alpha = 0.15f) to AttendanceHalfDay
+        else -> Color.LightGray.copy(alpha = 0.2f) to TextGray
+    }
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(bgColor)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(status, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = textColor)
+    }
+}
+
+@Composable
+fun SummaryDetailSection(summary: TeamSummary) {
+    Column(modifier = Modifier.padding(8.dp)) {
+        Text("Financial Overview", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextDark)
+        Spacer(Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                ReportRow("Total Earnings", "₹${summary.totalEarnings.toInt()}")
+                ReportRow("Total Paid", "₹${summary.totalPaid.toInt()}", AttendanceAbsent)
+                HorizontalDivider(color = BackgroundCream)
+                ReportRow("Total Outstanding", "₹${summary.totalBalance.toInt()}", PrimaryOrange, isBold = true)
+            }
+        }
+    }
+}
+
+@Composable
+fun ReportRow(label: String, value: String, valueColor: Color = TextDark, isBold: Boolean = false) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, fontSize = 14.sp, color = TextGray)
+        Text(value, fontSize = 15.sp, fontWeight = if (isBold) FontWeight.ExtraBold else FontWeight.Bold, color = valueColor)
+    }
+}
+
+@Composable
+fun AddWorkerDialog(onDismiss: () -> Unit, onAdd: (String, Double, String) -> Unit) {
     var name by remember { mutableStateOf("") }
     var wage by remember { mutableStateOf("") }
+    var role by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Worker") },
+        title = { Text("Add New Worker", fontWeight = FontWeight.Bold) },
         text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") }
-                )
-                OutlinedTextField(
-                    value = wage,
-                    onValueChange = { wage = it },
-                    label = { Text("Daily Wage") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = role, onValueChange = { role = it }, label = { Text("Role (e.g. Mason)") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = wage, onValueChange = { wage = it }, label = { Text("Wage") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
             }
         },
         confirmButton = {
-            Button(onClick = {
-                val w = wage.toDoubleOrNull() ?: 0.0
-                onAdd(name, w)
-            }) {
-                Text("Add")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun AddLaborEntryDialog(worker: Worker, onDismiss: () -> Unit, onAdd: (Boolean, Double) -> Unit) {
-    var present by remember { mutableStateOf(true) }
-    var advance by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add Labor Entry for ${worker.name}") },
-        text = {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = present, onCheckedChange = { present = it })
-                    Text("Present")
-                }
-                OutlinedTextField(
-                    value = advance,
-                    onValueChange = { advance = it },
-                    label = { Text("Advance Amount") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = {
-                val adv = advance.toDoubleOrNull() ?: 0.0
-                onAdd(present, adv)
-            }) {
-                Text("Add")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            Button(onClick = { onAdd(name, wage.toDoubleOrNull() ?: 0.0, role) }, colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)) { Text("Save") }
         }
     )
 }

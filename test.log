@@ -1,0 +1,308 @@
+3.2	Introduction
+The internship at Besant Technology covered two major domains: Full Stack Web Development and Quality Assurance Testing. The primary objective was to develop functional web applications using modern technologies while ensuring quality through rigorous testing methodologies.
+Full Stack Development involves creating both client-facing (frontend) and server-side (backend) components of a web application. The frontend was built using React.js while Node.js with Express.js was used for backend development, communicating with MySQL and MongoDB databases.
+The internship at Besant Technology was structured to provide a holistic learning experience covering the full spectrum of software development and quality assurance processes. The learning journey began with an orientation week where interns were introduced to the company’s work culture, internal tools, coding standards, and expectations. This initial phase was crucial for setting the foundation for productive work throughout the internship.
+Full Stack Development, as practiced at Besant Technology, is not merely about writing code for the frontend and backend in isolation. It involves an integrated understanding of how user interfaces communicate with server-side logic, how data is persisted and retrieved from databases, how authentication and authorization mechanisms protect system resources, and how the entire application is deployed and maintained in a production environment.
+The React.js frontend development training emphasized the component-based architecture that is central to modern web development. Each component was designed to be reusable, testable, and composable. React hooks such as useState, useEffect, useContext, and custom hooks were used extensively to manage component lifecycle and state without relying on class-based components. State management across the application was handled using the Redux toolkit, enabling predictable state transitions and easy debugging. How the entire application is deployed and maintained in a production environment. Each component was designed to be reusable, testable, and composable. React hooks such as use State, that is
+ 
+central to modern web development. Each component was designed to be reusable and testable. State management across the application was handled using the Redux toolkit, enabling predictable state.
+The Node.js backend training covered the Express.js framework in depth, including how to define routes, implement middleware functions, handle errors globally, and structure the application using the MVC (Model-View-Controller) pattern. RESTful API design principles were followed rigorously, including proper use of HTTP methods, status codes, and response payloads. Input validation was performed using the express-validator library to ensure data integrity at the API layer.
+Database design and management formed an integral part of the backend development curriculum. For relational data, MySQL was used with schema design principles including normalization, foreign key constraints, and indexing for performance optimization. For document-based data, MongoDB was used, leveraging its flexible schema to handle hierarchical and unstructured data efficiently. Both databases were accessed via ORM/ODM libraries — Sequelize for MySQL and Mongoose for MongoDB — enabling clean and maintainable data access code.
+Table 3.2: Full Stack Development Tasks Breakdown
+
+Development Area	Technologies Used	Key Tasks	Duration
+Frontend UI	React.js, Bootstrap, CSS3	Component design, routing, state management	4 weeks
+Backend API	Node.js, Express.js	REST	API,	middleware, authentication	4 weeks
+Database	MySQL, MongoDB	Schema	design,	CRUD,	query optimization	2 weeks
+Authentication	JWT, bcrypt	Login/logout, token refresh, role-based access	1 week
+Integration	Axios, Fetch API	API consumption, error handling, loading states	1 week
+3.3	System Requirements
+
+3.3.1	Functional Requirements
+•	The system shall allow users to register, log in, and manage their profiles securely.
+•	The system shall support CRUD operations for all major entities.
+•	The system shall expose RESTful APIs for frontend-backend communication.
+•	The system shall implement JWT-based authentication for secure user sessions.
+ 
+•	The system shall generate test reports and maintain a defect log using JIRA.
+•	The system shall support role-based access control (Admin, User).
+The user registration module required the system to validate email formats, enforce strong password policies (minimum 8 characters with at least one uppercase letter, one number, and one special character), and send a verification email upon successful registration. The profile management module allowed users to update their personal information, upload profile pictures, and change passwords with appropriate validation.
+The CRUD operations were defined for multiple entities including user profiles, product listings, and order records. Each operation was governed by role-based access control, ensuring that only authorized users could create, update, or delete records. Administrators were granted full access while regular users were restricted to read and limited update operations on their own records.
+Table 3.3: Functional Requirements Traceability Matrix
+
+Req. ID	Requirement Description	Priority	Status
+FR-001	User registration with email verification	High	Implemented
+FR-002	Secure login with JWT authentication	High	Implemented
+FR-003	CRUD for user profiles	High	Implemented
+FR-004	Role-based access control (Admin/User)	High	Implemented
+FR-005	Product listing and management	Medium	Implemented
+FR-006	Order management and tracking	Medium	Implemented
+FR-007	RESTful API for all entities	High	Implemented
+FR-008	JIRA-integrated defect log	Medium	Implemented
+FR-009	Report generation module	Low	Implemented
+FR-010	Password reset via email OTP	Medium	Implemented
+
+3.3.2	Non-Functional Requirements
+•	Performance: Application should respond to user requests within 2 seconds under normal load conditions.
+•	Scalability: Architecture should support horizontal scaling for increased user loads.
+•	Security: All data transfers must be encrypted; sensitive data must be hashed.
+•	Scalability: Architecture should support horizontal scaling for increased user loads.
+ 
+The non-functional requirements played a critical role in shaping the architecture and technology choices for the project. The performance requirement of sub-2-second response times under normal load was validated through load testing using Apache JMeter, with simulated concurrent users sending requests to Security was addressed at multiple layers of the application.
+Transport layer security was enforced by configuring HTTPS with SSL certificates. Application layer security was implemented using Helmet.js to set secure HTTP headers, rate limiting to prevent brute-force attacks, and input sanitization to guard against SQL injection and cross-site scripting (XSS) attacks. Sensitive user data such as passwords were hashed using bcrypt with a salt factor of 12, ensuring that even in the event of a data breach, passwords remain unreadable.
+Table 3.4: Non-Functional Requirements Validation
+
+NFR ID	Requirement	Target Metric	Achieved Metric	Validation Method
+NFR-001	Performance	< 2 sec response	Avg. 1.3 sec	JMeter Load Test
+NFR-002	Scalability	Horizontal scaling	Docker	+	Load Balancer	Architecture Review
+NFR-003	Security	Encrypted data	HTTPS + bcrypt	Penetration Testing
+NFR-004	Reliability	99% uptime	99.5% uptime	Monitoring Dashboard
+NFR-005	Usability	Intuitive UI	SUS Score 82/100	User Testing Session
+
+3.3.3	Hardware and Software Requirements
+
+Table 3.5: Hardware and Software Requirements
+
+Component	Specification
+Processor	Intel Core i5 or higher
+RAM	8 GB (16 GB recommended)
+Storage	256 GB SSD
+OS	Windows 10 / Ubuntu 20.04
+Frontend	HTML5, CSS3, JavaScript, React.js
+Backend	Node.js, Express.js
+ 
+
+Database	MySQL, MongoDB
+Testing Tools	Selenium, Jest, Postman, JIRA
+IDE	Visual Studio Code
+3.4	System Design
+The system followed a three-tier architecture comprising the Presentation Layer (React.js), Application Layer (Node.js/Express.js), and Data Layer (MySQL/MongoDB). This modular architecture ensured separation of concerns and made the system easier to maintain and test.
+The frontend communicated with the backend via RESTful APIs using HTTP methods (GET, POST, PUT, DELETE). Authentication was handled using JSON Web Tokens (JWT), validated on every protected route.
+
+
+
+
+Fig3.1 Three System Architecture
+
+The three-tier architecture chosen for this project is a well-established pattern in enterprise software development. In this model, each tier has a clearly defined responsibility and communicates with adjacent tiers through well-defined interfaces. This separation of concerns reduces coupling between components, making the system easier to develop, test, maintain, and scale independently.The Presentation Layer, built with React.js, manages all user interface rendering and user interaction handling. It uses client-side routing with React Router to enable single-page application (SPA) navigation without full page reloads. The application state is managed using Redux, with asynchronous operations
+ 
+The Application Layer, developed with Node.js and Express.js, serves as the brain of the system. It receives HTTP requests from the frontend, validates inputs, processes business logic, and delegates data operations to the appropriate database. The layer is structured into multiple modules including User, Product, Order, Authentication, and Report, each encapsulated in its own controller, service.
+The Data Layer comprises both MySQL and MongoDB databases, each serving distinct data storage needs. MySQL stores structured relational data such as user accounts, product inventory, and order records. MongoDB stores semi-structured data such as audit logs, activity feeds, and configuration settings. Both databases are connected to the application layer via respective ORM and ODM libraries, providing abstracted and type-safe data access methods.
+The system also incorporates a caching layer using Redis, which stores frequently accessed data such as user session tokens, product catalog listings, and configuration parameters. This significantly reduces the load on primary databases and improves response times for read-heavy endpoints. Data Layer comprises both MySQL and MongoDB databases, each serving distinct data storage needs. MySQL stores structured relational data such as user accounts, product inventory, and order records. MongoDB stores semi-structured data such as audit logs, activity feeds, and configuration settings. Both databases are connected to the application layer via respective ORM and ODM libraries
+Table 3.6: System Architecture Component Summary
+
+Component	Technology	Role	Communication Protocol
+Frontend	React.js + Redux	User Interface	HTTP/HTTPS (REST API)
+Backend	Node.js + Express.js	Business Logic	HTTP/HTTPS
+Relational DB	MySQL 8.x	Structured Data Storage	TCP (Sequelize ORM)
+NoSQL DB	MongoDB 6.x	Document Storage	TCP (Mongoose ODM)
+Cache	Redis	Session and Data Caching	TCP
+Auth Service	JWT + bcrypt	Authentication	HTTP Headers
+Email Service	Nodemailer + SMTP	Notifications	SMTP
+ 
+3.5	Implementation
+
+3.5.1	Full Stack Development
+The Full Stack Development phase involved building a complete web application from scratch. The frontend was developed using React.js with reusable component-based architecture, including login/registration pages, dashboard, and data management views. The system also incorporates a caching layer using Redis, which stores frequently accessed data such as user session tokens, product catalogue listings, and configuration parameters. This significantly reduces the load on primary databases and improves response times for read-heavy endpoints. Authentication was implemented using JSON Web Tokens (JWT). Upon successful login, the backend generated a signed access token (valid for 15 minutes) and a refresh token (valid for 7 days). The access token was stored in memory on the frontend (not in localStorage, to prevent XSS), while the refresh token was stored in an HTTP-only cookie to protect
+
+Fig 3.2 Full Stack Technology Stack Used During Internship
+In Fig 3.2 The development process followed a feature-branch workflow on GitHub. Each new feature was developed in a dedicated branch, reviewed by the mentor through a pull request, and merged into the main branch only after approval. This practice enforced code quality and provided interns with experience in a professional development workflow.
+The React.js frontend was organized into a modular folder structure: components for reusable UI elements, pages for route-level views, services for API communication, store for Redux state management, utils for helper functions, and hooks for custom React hooks. This organization made the codebase navigable and maintainable, even as it grew in size and complexity.
+ 
+Authentication was implemented using JSON Web Tokens (JWT). Upon successful login, the backend generated a signed access token (valid for 15 minutes) and a refresh token (valid for 7 days). The access token was stored in memory on the frontend (not in localStorage, to prevent XSS), while the refresh token was stored in an HTTP-only cookie to protect against cross-site scripting attacks. Token refresh was handled automatically through an Axios interceptor, providing a seamless user experience.
+The database schema for MySQL was designed with proper normalization up to the Third Normal Form (3NF) to eliminate data redundancy. Indexes were created on frequently queried columns such as email, user_id, and created_at to optimize read performance. Transactions were used for operations involving multiple tables to ensure data consistency and integrity. Token refresh was handled automatically through. Token refresh was handled automatically through an Axios interceptor, providing a seamless user HTTP-only cookie to protect against cross-site scripting attacks. Token refresh was handled automatically
+Table 3.7: Full Stack Development Milestones
+
+Milestone	Deliverable	Completion Status	Week No.
+Environment Setup	Dev environment configured	Completed	Week 1
+UI Prototype	React.js	UI	wireframes	and components	Completed	Week 2-3
+Backend API v1	Core REST API endpoints live	Completed	Week 4-5
+Database Integration	MySQL and MongoDB connected	Completed	Week 6
+Authentication	JWT login/logout functional	Completed	Week 7
+Full Integration	Frontend-backend fully integrated	Completed	Week 8
+Code Review	PR reviews and final refinements	Completed	Week 8
+
+
+3.5.1.1	API Design and Documentation
+The RESTful API developed during the internship followed a consistent design philosophy based on industry best practices. All API endpoints were prefixed with a versioned path (e.g., /api/v1/) to support backward compatibility as the API evolves. Resources were named as pluralized nouns (e.g., /api/v1/users,
+/api/v1/products), and HTTP verbs were used semantically to express the intended operation on each resource.
+ 
+API documentation was maintained using Swagger (OpenAPI 3.0), which provided an interactive documentation interface accessible to all team members. This documentation included endpoint descriptions, request parameters, request body schemas, response schemas, and example payloads. Keeping documentation up-to-date was enforced as a team norm, ensuring that frontend developers could integrate against accurate API specifications without requiring constant back-and-forth communication.
+Error handling in the API was standardized using a global error middleware in Express.js. Every thrown error was captured by this middleware and transformed into a consistent error response format containing an error code, a human-readable message, and optionally a list of validation errors. This consistency greatly simplified error handling on the frontend and improved the overall developer experience. Keeping documentation up-to-date was enforced as a team norm, ensuring that frontend developers could integrate against accurate API specifications without requiring constant back-and-forth communication. This consistency greatly simplified error handling on the frontend and improved the overall developer
+3.5.1.2	Frontend Component Architecture
+The React.js frontend was architected following the Atomic Design methodology, which categorizes UI components into atoms (basic elements like buttons and inputs), molecules (combinations of atoms), organisms (complex UI sections), templates (page layouts), and pages (complete views assembled from organisms and templates). This methodology promoted consistency in the design language and accelerated development by enabling extensive component reuse.
+Responsive design was achieved using Bootstrap 5’s grid system combined with custom CSS media queries. The application was tested on multiple screen sizes (mobile 375px, tablet 768px, desktop 1280px, large desktop 1920px) to ensure a consistent user experience across devices. Accessibility (a11y) best practices were incorporated, including proper use of semantic HTML elements, ARIA attributes, and keyboard navigation support.
+Performance optimization techniques applied to the frontend included code splitting using React.lazy and Suspense to load components on demand, memoization using React.memo and useMemo to prevent unnecessary re-renders, and image lazy loading using the Intersection Observer API. These optimizations resulted in a measurable improvement in the application’s Lighthouse performance score from an initial 62 to a final 84 out of 100. . The application was tested on multiple screen sizes (mobile 375px, tablet 768px, desktop 1280px, large desktop 1920px) to ensure a consistent user experience across devices. Responsive design was achieved using Bootstrap 5’s grid system combined with custom CSS media queries.
+ 
+3.5.1.3	Security Implementation
+Security was treated as a first-class concern throughout the development process, integrated from the earliest stages of design rather than applied as an afterthought. The OWASP Top 10 security vulnerabilities were used as a reference framework for identifying and addressing security risks in the application. Key security measures implemented included protection against injection attacks, broken authentication, sensitive data exposure, security misconfiguration, and cross-site scripting (XSS).
+Input validation was enforced at both the frontend and backend layers. On the frontend, form fields were validated in real time using React hooks and validation libraries, providing immediate feedback to users. On the backend, express-validator middleware validated all incoming request bodies and query parameters before they reached the business logic layer, preventing malformed or malicious data from entering the system. The application implemented a comprehensive Content Security Policy (CSP) through HTTP headers, On the frontend, form fields were validated in real time using React hooks and validation.
+This significantly reduced the attack surface for XSS and data injection attacks. HTTP Strict Transport Security (HSTS) headers were also configured to ensure browsers only communicated with the server over encrypted connections, preventing protocol downgrade attacks.
+3.5.1.4	Deployment and DevOps
+The application was containerized using Docker, with separate Dockerfiles for the frontend, backend, and database services. A Docker Compose configuration file orchestrated all services during local development and testing, enabling any team member to spin up the complete application environment with a single command. This eliminated the “works on my machine” problem and ensured consistency across development, testing, and production environments.
+The CI/CD pipeline was configured using Jenkins, integrated with the GitHub repository through webhooks. Every push to the main branch automatically triggered the pipeline, which performed the following stages in sequence: code checkout, dependency installation, static code analysis with ESLint, unit test execution with Jest, integration test execution with Postman/Newman, Docker image build, and deployment to the staging environment. Pipeline failures at any stage sent notifications to the team Slack channel, enabling rapid response to build or test failures.
+Environment-specific configuration (database connection strings, API keys, JWT secrets) was managed using environment variables stored in a .env file for local development and injected as secure environment variables in the CI/CD pipeline for staging and production environments. This practice ensured that
+ 
+sensitive configuration was never committed to version control, following the Twelve-Factor App methodology for configuration management.
+Table 3.8: CI/CD Pipeline Stages and Outcomes
+
+Pipeline Stage	Tool / Technology	Duration (avg)	Success Rate
+Code Checkout	Git / GitHub	5 sec	100%
+Dependency Install	npm install	45 sec	98%
+Static Code Analysis	ESLint	15 sec	95%
+Unit Tests	Jest	30 sec	97%
+Integration Tests	Newman (Postman)	60 sec	94%
+Docker Build	Docker	90 sec	99%
+Deploy to Staging	Docker Compose	30 sec	99%
+
+3.5.2	QA Testing
+The QA Testing phase involved comprehensive testing of the developed application. Manual test cases were written for each feature and executed systematically. Automated test scripts were written using Selenium for end-to-end browser testing and Jest for unit and integration testing.
+
+
+
+Fig 3.3 QA Testing Process Flow
+The QA Testing phase was conducted systematically across four stages: Unit Testing, Integration Testing, System Testing, and User Acceptance Testing (UAT). Each stage had clearly defined objectives, test cases, and entry/exit criteria, ensuring a structured and comprehensive quality assurance process.
+Unit Testing was performed at the component and function level using Jest. Individual React components were tested using React Testing Library, which allows testing of components in a manner that simulates actual user interactions. For backend functions, Jest mocks were used to isolate units from their dependencies, such as database queries and external API calls, enabling fast and reliable tests.
+ 
+Integration Testing verified that different modules of the application worked correctly when combined. API endpoints were tested using Postman collections, with pre-request scripts setting up test data and test scripts validating response payloads, status codes, and headers. These Postman tests were also automated and run as part of the CI/CD pipeline using Newman, Postman’s CLI companion.
+System Testing encompassed end-to-end testing of complete user workflows using Selenium WebDriver with Java. Test scripts were written for critical user journeys including user registration, login, product browsing, cart management, order placement, and order status tracking. These tests were parameterized using Excel data sheets, enabling data-driven testing with multiple input combinations. These Postman tests were also automated and run as part of the CI/CD pipeline using Newman
+Bug tracking was performed systematically using JIRA. Each defect identified during testing was logged with detailed information including steps to reproduce, expected behavior, actual behavior, severity, priority, and attachments (screenshots or logs). A formal bug lifecycle was followed: Open → Assigned
+→ In Progress → Fixed → Retest → Closed.
+
+Table 3.9: QA Testing Summary
+
+Testing Type	Tool Used	Test	Cases Written	Defects Found	Defects Resolved
+Unit Testing	Jest	48	12	12
+Integration Testing	Postman / Newman	35	8	8
+System Testing	Selenium WebDriver	42	15	14
+Regression Testing	Selenium + Jest	30	5	5
+Performance Testing	JMeter	10	3	3
+UAT	Manual	25	4	4
+Total	-	190	47	46
+
+
+Table 3.10: Defect Severity Distribution
+
+Severity	Total Defects	Resolved	Pending
+Critical	5	5	0
+High	14	14	0
+Medium	18	17	1
+ 
+
+Low	10	10	0
+Total	47	46	1
+
+3.5.2.1	Test Planning and Strategy
+The QA testing strategy for the project was documented in a formal Test Plan that outlined the testing objectives, scope, approach, resources, schedule, and risk assessment. The test plan was reviewed and approved by the Technical Lead before testing commenced, ensuring alignment between the development and QA teams on quality expectations and exit criteria. Regression testing was performed at the end of each sprint to ensure that new features did not break previously working functionality. A regression test suite comprising the most critical and frequently.
+Test cases were documented in a structured format using Excel spreadsheets shared on Google Drive, with each test case containing a unique identifier, the associated requirement ID, preconditions, test steps, test data, expected results, and status fields for tracking execution results. A separate sheet was maintained for defect tracking until JIRA was formally integrated into the workflow. The test plan was reviewed and approved by the Technical Lead before testing commenced, ensuring alignment between the development.
+Regression testing was performed at the end of each sprint to ensure that new features did not break previously working functionality. A regression test suite comprising the most critical and frequently used test cases was maintained and updated with each sprint, providing a reliable safety net against regressions introduced during active development. The test plan was reviewed and approved by the Technical Lead.
+3.5.2.2	Automated Testing with Selenium
+The Selenium-based automation framework was structured using the Page Object Model (POM) design pattern, which separates the test logic from the UI element locators and interactions. Each web page in the application had a corresponding Page Object class that encapsulated the page’s elements and the actions that could be performed on them. Test classes then called these Page Object methods to drive the browser, making tests readable and maintainable.
+ChromeDriver was used as the WebDriver implementation, with headless Chrome configured for CI/CD environments to enable test execution without a graphical browser. Test execution reports were generated using ExtentReports, providing HTML reports with pass/fail status, execution time, screenshots on failure, and trend charts showing test results across multiple runs. Test classes then called these Page Object methods to drive the browser, making tests readable and maintainable.
+ 
+Table 3.11: Selenium Automation Test Coverage
+
+Module	Total Scenarios	Automated	Manual Only	Automation %
+User Registration	8	6	2	75%
+User Login / Logout	10	9	1	90%
+Profile Management	7	5	2	71%
+Product Listing	12	10	2	83%
+Order Management	15	11	4	73%
+Search and Filter	8	6	2	75%
+Admin Dashboard	10	7	3	70%
+Total	70	54	16	77%
+ 
+CHAPTER 4
+RESULTS AND LEARNINGS
+
+4.1	Outcomes of the Internship
+The 4 Months internship at Besant Technology yielded significant outcomes. A fully functional web application was developed and tested, demonstrating the practical application of Full Stack Development and QA Testing principles.
+•	Developed a complete web application with React.js frontend and Node.js/Express.js backend.
+•	Implemented JWT-based authentication and role-based access control.
+•	Written and executed over 100 manual test cases covering functional and regression scenarios.
+•	Automated key test scenarios using Selenium and Jest, reducing manual testing effort by ~40%.
+•	Performed API testing with Postman and tracked 30+ bugs through JIRA.
+
+
+
+Fig 4.1 Summary of Internship Outcome and Skills Acquired
+The outcomes of the internship extended well beyond the mere creation of a web application. The experience provided a comprehensive understanding of how software development organizations function, how projects are managed in Agile environments, and how individual contributions fit into the larger picture of product delivery. These insights are invaluable for a fresh engineering graduate transitioning into a professional role.
+One of the most significant outcomes was the development of a professional mindset around code quality. Through regular code reviews, the intern internalized the importance of writing clean, readable, and maintainable code. Coding conventions were followed strictly, including meaningful variable naming, function-level documentation using JSDoc, and consistent formatting enforced through Slint. These insights are invaluable for a fresh engineering graduate transitioning into a professional role
+ 
+
+The testing phase of the internship provided deep insights into the importance of quality assurance in software development. Managing a defect backlog in JIRA, writing comprehensive test plans, and executing regression test suites provided practical experience that is directly applicable to a QA role in the industry. The automated test suite developed during the internship was handed over to the team as a reusable asset.
+Table 4.1: Internship Quantitative Outcomes
+
+Metric	Target	Achieved
+Web Application Features	10 modules	12 modules
+API Endpoints Developed	20 endpoints	27 endpoints
+Manual Test Cases Written	80 cases	100+ cases
+Automated Test Scripts	30 scripts	42 scripts
+Bugs Logged in JIRA	25 bugs	47 bugs
+Code Coverage (Unit Tests)	70%	78%
+Test Automation Coverage	40% reduction in manual effort	42% reduction achieved
+
+4.1.1	Technical Achievements
+From a purely technical standpoint, the internship resulted in the delivery of a production-ready web application that passed all acceptance criteria defined at the project’s inception. The application supported concurrent access by up to 50 simultaneous users without degradation in performance, as validated through JMeter load testing. All critical and high-severity defects were resolved prior to the final project handover, with only one medium-severity defect deferred to the next development iteration due to scope constraints.
+The codebase produced during the internship comprised approximately 8,500 lines of JavaScript code (excluding comments and blank lines) distributed across the frontend and backend. The code adhered to established style guides (Airbnb JavaScript Style Guide for React, and the Express.js best practices guide for the backend), validated through ESLint configuration integrated into the CI/CD pipeline. Code coverage for unit tests reached 78%, exceeding the initial target of 70%. All critical and high-severity defects were resolved prior to the final project handover, with only one medium-severity defect deferred to the next development iteration due to scope constraints. The application supported concurrent access by up to 50 simultaneous users without degradation in performance.
+ 
+4.1.2	Professional Development
+Beyond technical deliverables, the internship fostered significant professional development. Participation in Agile ceremonies — sprint planning, daily stand-ups, sprint reviews, and retrospectives — provided firsthand experience of how high-performing software teams operate. Contributing to sprint retrospectives offered the opportunity to reflect critically on processes and suggest improvements, a practice that instills a culture of continuous improvement.
+Presenting technical findings and project progress to senior team members during sprint reviews developed the ability to communicate complex technical concepts to mixed audiences. Writing detailed bug reports in JIRA, with precise steps to reproduce, severity assessments, and supporting evidence, honed analytical thinking and documentation skills that are directly applicable to a professional QA or development role.
+The internship also highlighted the importance of time management and task prioritization in a deadline-driven environment. Balancing multiple concurrent tasks — feature development, writing test cases, fixing reported bugs, and attending team meetings — required disciplined time allocation and clear communication of blockers to the mentor. These experiences formed the foundation of a professional work ethic that will serve well throughout a career in software engineering.
+Table 4.2: Weekly Effort Distribution Across Internship Tasks
+
+Activity	Month	1
+(hrs/wk)	Month	2
+(hrs/wk)	Month	3
+(hrs/wk)	Month	4
+(hrs/wk)
+Frontend Development	20	10	5	3
+Backend Development	8	22	5	2
+Database Work	2	8	2	1
+QA Testing	2	2	22	15
+Documentation	2	2	3	12
+Meetings and Reviews	6	6	6	6
+Learning and Research	8	8	5	3
+Bug Fixing	2	2	7	8
+ 
+4.2	Key Learnings
+•	Proficiency in React.js component lifecycle, hooks, and state management.
+•	Hands-on experience with RESTful API development using Node.js and Express.js.
+•	Understanding of database design for both SQL (MySQL) and NoSQL (MongoDB) databases.
+•	Mastery of testing methodologies including manual, automation, and API testing.
+•	Experience with Agile methodology, sprint planning, and team collaboration.
+The internship reinforced the understanding that software development is not a solitary activity but a collaborative process. Effective communication, whether through daily stand-ups, code review comments, bug reports, or sprint retrospectives, is as important as technical skill. The ability to articulate ideas, ask precise questions, and document findings clearly emerged as a critical professional competency developed during this internship.
+Version control discipline was another major learning. The internship enforced the use of meaningful commit messages following the Conventional Commits specification (e.g., feat: add user registration endpoint, fix: resolve JWT expiry bug). This practice, combined with branch naming conventions and structured pull request descriptions, made the project’s change history meaningful and navigable.
+Exposure to CI/CD pipelines through Jenkins and GitHub Actions was an eye-opening experience. Understanding how code changes automatically trigger builds, run test suites, and deploy to staging environments illustrated the power of automation in modern software delivery. Configuring the pipeline to fail builds on test failures or code coverage drops below threshold instilled the habit of writing tests alongside feature code.
+The experience of working with both SQL and NoSQL databases in a single project provided a nuanced understanding of when to use which type of storage. This technical decision-making ability, grounded in practical experience, is a differentiator in job interviews and real-world project assessments.
+Table 4.3: Skills Gained During Internship
+
+Skill Area	Specific Skills Acquired	Proficiency Level
+Frontend Development	React.js,	Redux,	React	Router,	Hooks, Bootstrap	Intermediate-Advanced
+Backend Development	Node.js, Express.js, REST API Design, JWT	Intermediate
+Database Management	MySQL, MongoDB, Sequelize, Mongoose	Intermediate
+ 
+
+QA Testing	Manual Testing, Selenium, Jest, Postman, JIRA	Intermediate
+DevOps	Git, GitHub, Docker, Jenkins CI/CD	Beginner-Intermediate
+Soft Skills	Team collaboration, communication, documentation	Intermediate
+Agile Methodology	Sprint planning, stand-ups, retrospectives	Intermediate
+
+4.3	Challenges and Solutions
+•	Challenge: Integrating React frontend with Node.js backend.
+•	Solution: Configured CORS middleware and used React proxy settings.
+•	Challenge: Writing reliable test scripts for dynamic UI elements.
+•	Solution: Used explicit waits in Selenium and data-testid attributes.
+ 
+BIBLIOGRAPHY
+[1]	React.js Documentation. https://reactjs.org/docs/getting-started.html
+[2]	Node.js Documentation. https://nodejs.org/en/docs
+[3]	Express.js Documentation.: https://expressjs.com
+[4]	MongoDB Documentation. https://www.mongodb.com/docs
+[5]	MySQL Reference Manual.: https://dev.mysql.com/doc
+[6]	Selenium Documentation.: https://www.selenium.dev/documentation
+[7]	Jest Framework. https://jestjs.io/docs/getting-started
+[8]	Postman Learning Centre. https://learning.postman.com
+[9]	JIRA Software Guide. https://support.atlassian.com/jira-software-cloud
+[10]	Besant Technology. https://www.besanttechnologies.com

@@ -81,8 +81,12 @@ fun PhotoScreen(
     ) { granted ->
         if (granted) {
             val uri = createImageUri(context)
-            pendingPhotoUri = uri
-            cameraLauncher.launch(uri)
+            if (uri != null) {
+                pendingPhotoUri = uri
+                cameraLauncher.launch(uri)
+            } else {
+                Toast.makeText(context, "Unable to access external storage", Toast.LENGTH_LONG).show()
+            }
         } else {
             Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_LONG).show()
         }
@@ -217,9 +221,10 @@ fun PhotoScreen(
     }
 }
 
-private fun createImageUri(context: Context): Uri {
+private fun createImageUri(context: Context): Uri? {
+    val picturesDir = context.getExternalFilesDir("Pictures") ?: return null
     val imageFile = File(
-        context.getExternalFilesDir("Pictures"),
+        picturesDir,
         "photo_${System.currentTimeMillis()}.jpg"
     )
     return FileProvider.getUriForFile(

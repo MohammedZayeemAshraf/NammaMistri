@@ -104,10 +104,10 @@ class MainActivity : ComponentActivity() {
                     }
 
                     repository = repo
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     Log.e(TAG, "LaunchedEffect: Error during database initialization", e)
                     e.printStackTrace()
-                    initError = e.message ?: "Unknown initialization error"
+                    initError = e.message ?: "Unknown initialization error: ${e::class.java.simpleName}"
                 }
             }
 

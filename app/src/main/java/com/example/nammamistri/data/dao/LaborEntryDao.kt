@@ -2,13 +2,14 @@ package com.example.nammamistri.data.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.nammamistri.data.LaborEntry
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LaborEntryDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: LaborEntry): Long
 
     @Query("SELECT * FROM labor_entries WHERE workerId = :workerId ORDER BY date DESC")
